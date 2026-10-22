@@ -1,0 +1,4 @@
+pymongo>=4.10,<5
+redis>=5.2,<7
+python-dotenv>=1.0,<2
+pytest>=8.3,<9
