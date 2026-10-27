@@ -11,7 +11,9 @@ def _pending(owner: str, work: str) -> None:
 
 
 def generate_data() -> None:
-    _pending("João", "simulador de medições")
+    from app.simulador import executar_console
+
+    executar_console()
 
 
 def query_sensor_interval() -> None:
