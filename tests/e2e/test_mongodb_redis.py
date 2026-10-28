@@ -21,7 +21,7 @@ def clients():
         decode_responses=True,
         socket_connect_timeout=2,
     )
-    mongo_client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+    mongo_client = MongoClient(uri, tz_aware=True, serverSelectionTimeoutMS=3000)
     try:
         yield mongo_client, redis_client
     finally:
