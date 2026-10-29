@@ -17,11 +17,15 @@ def generate_data() -> None:
 
 
 def query_sensor_interval() -> None:
-    _pending("Lucas", "consulta por sensor e intervalo")
+    from app.consultas import consultar_console
+
+    consultar_console()
 
 
 def summarize_sensor() -> None:
-    _pending("Lucas", "agregação horária por sensor")
+    from app.consultas import resumo_sensor_console
+
+    resumo_sensor_console()
 
 
 def summarize_city() -> None:
