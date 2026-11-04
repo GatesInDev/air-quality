@@ -1,13 +1,9 @@
-"""Pontos de integração com as entregas dos demais integrantes.
+"""Pontos de integração entre o menu e os módulos de domínio.
 
-Substituir cada corpo provisório pelas funções implementadas nos módulos
-de domínio. O menu chama estas funções; sua interface pode permanecer sem
-argumentos ou adaptar-se aqui para coletar parâmetros no console.
+Cada opção do console chama uma função sem argumentos daqui, que delega ao
+módulo responsável. Os imports ficam dentro das funções para que abrir o menu
+não exija conexão com MongoDB nem Redis.
 """
-
-
-def _pending(owner: str, work: str) -> None:
-    print(f"Operação ainda não integrada: {work} (responsável: {owner}).")
 
 
 def generate_data() -> None:
@@ -29,12 +25,18 @@ def summarize_sensor() -> None:
 
 
 def summarize_city() -> None:
-    _pending("Willian", "agregação horária por cidade")
+    from app.cidades import resumo_cidade_console
+
+    resumo_cidade_console()
 
 
 def update_redis() -> None:
-    _pending("Willian", "gravação dos resumos no Redis")
+    from app.redis_store import atualizar_console
+
+    atualizar_console()
 
 
 def show_redis_hashes() -> None:
-    _pending("Willian", "leitura dos Hashes do Redis")
+    from app.redis_store import ver_hashes_console
+
+    ver_hashes_console()
