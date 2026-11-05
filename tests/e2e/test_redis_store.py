@@ -229,14 +229,14 @@ def test_todos_os_campos_conferem_com_historico_independente(db, cliente):
         if ':cidade:' in chave:
             esperado['qt_sensores'] = str(len(ids))
         for campo in ('pm25', 'pm10', 'co2', 'temperatura', 'umidade'):
-            esperado[f'{campo}_media'] = str(round(mean(d[campo] for d in docs), 2))
+            esperado[f'{campo}_media'] = str(mean(d[campo] for d in docs))
         for campo in ('pm25', 'pm10'):
             esperado[f'{campo}_max'] = str(max(d[campo] for d in docs))
         atual = ler_hash(cliente, chave)
         assert set(atual) == set(esperado)
         for campo, valor in esperado.items():
             if campo.endswith('_media'):
-                assert float(atual[campo]) == pytest.approx(float(valor), abs=0.01)
+                assert float(atual[campo]) == pytest.approx(float(valor), abs=0.005000001, rel=0)
             else:
                 assert atual[campo] == valor
 
