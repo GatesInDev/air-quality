@@ -204,3 +204,60 @@ def test_console_de_leitura_sem_dados_orienta_o_usuario(cliente) -> None:
 
     assert ver_hashes_console(cliente=cliente, output_fn=linhas.append) == {}
     assert "opção 5" in linhas[0]
+
+
+def test_todos_os_campos_conferem_com_historico_independente(db, cliente):
+    """Confere todas as estatísticas sem reutilizar os serializadores/pipelines."""
+    from datetime import timedelta
+    from statistics import mean
+    from app.simulador import INICIO_PADRAO
+
+    atualizar_tudo(db, cliente)
+    inicio = INICIO_PADRAO + timedelta(hours=23)
+    fim = inicio + timedelta(hours=1)
+    sensores = list(db['Sensores'].find({}))
+    grupos = {chave_sensor(s['_id']): {s['_id']} for s in sensores}
+    for sensor in sensores:
+        local = sensor['localizacao']
+        grupos.setdefault(chave_cidade(local['uf'], local['cidade']), set()).add(sensor['_id'])
+    assert set(ler_hashes(cliente)) == set(grupos)
+    for chave, ids in grupos.items():
+        docs = list(db[MEDICOES].find({'sensor_id': {'$in': list(ids)},
+                                     'timestamp': {'$gte': inicio, '$lt': fim}}))
+        esperado = {'inicio_periodo': '2026-10-20T23:00:00Z',
+                    'fim_periodo': '2026-10-21T00:00:00Z', 'qt_medicoes': str(len(docs))}
+        if ':cidade:' in chave:
+            esperado['qt_sensores'] = str(len(ids))
+        for campo in ('pm25', 'pm10', 'co2', 'temperatura', 'umidade'):
+            esperado[f'{campo}_media'] = str(round(mean(d[campo] for d in docs), 2))
+        for campo in ('pm25', 'pm10'):
+            esperado[f'{campo}_max'] = str(max(d[campo] for d in docs))
+        atual = ler_hash(cliente, chave)
+        assert set(atual) == set(esperado)
+        for campo, valor in esperado.items():
+            if campo.endswith('_media'):
+                assert float(atual[campo]) == pytest.approx(float(valor), abs=0.01)
+            else:
+                assert atual[campo] == valor
+
+
+def test_nova_hora_substitui_apenas_resumos_afetados(db, cliente):
+    from datetime import timedelta
+    from app.simulador import INICIO_PADRAO
+
+    atualizar_tudo(db, cliente)
+    anterior = ler_hashes(cliente)
+    db[MEDICOES].insert_one({
+        'sensor_id': 'S001', 'timestamp': INICIO_PADRAO + timedelta(days=1),
+        'pm25': 90.0, 'pm10': 110.0, 'co2': 600, 'temperatura': 20.0, 'umidade': 70,
+    })
+    atualizar_tudo(db, cliente)
+    atual = ler_hashes(cliente)
+    afetados = {chave_sensor('S001'), chave_cidade('SC', 'Chapecó')}
+    assert set(atual) == set(anterior)
+    for chave in afetados:
+        assert atual[chave]['inicio_periodo'] == '2026-10-21T00:00:00Z'
+        assert atual[chave]['qt_medicoes'] == '1'
+        assert float(atual[chave]['pm25_media']) == 90.0
+    for chave in set(atual) - afetados:
+        assert atual[chave] == anterior[chave]
